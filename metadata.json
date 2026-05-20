@@ -1,7 +1,0 @@
-{
-  "owner": "tj-actions",
-  "name": "branch-names",
-  "visibility": "public",
-  "description": ":octocat: Github action to retrieve branch or tag names with support for all events.",
-  "block_publish": false
-}
