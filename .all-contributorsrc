@@ -1,0 +1,44 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "loarca",
+      "name": "Alejandro Loarca",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22898638?v=4",
+      "profile": "https://github.com/loarca",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "IanWoodard",
+      "name": "Ian Woodard",
+      "avatar_url": "https://avatars.githubusercontent.com/u/17186604?v=4",
+      "profile": "https://ianwoodard.me",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "boidolr",
+      "name": "Raphael Boidol",
+      "avatar_url": "https://avatars.githubusercontent.com/u/652404?v=4",
+      "profile": "https://home.boidol.dev/",
+      "contributions": [
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "branch-names",
+  "projectOwner": "tj-actions",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true,
+  "commitType": "docs",
+  "commitConvention": "angular"
+}

@@ -1,0 +1,44 @@
+name: Test strip_branch_prefix input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          strip_branch_prefix: "act-"
+      - name: Assert ref_branch has prefix stripped
+        env:
+          REF_BRANCH: ${{ steps.action.outputs.ref_branch }}
+        run: |
+          echo "ref_branch: $REF_BRANCH"
+          # Under act, the branch is 'act-harness'; stripping 'act-' yields 'harness'
+          if [ "$REF_BRANCH" != "harness" ]; then
+            echo "FAIL: expected ref_branch='harness' after stripping 'act-' prefix, got '$REF_BRANCH'"
+            exit 1
+          fi
+          echo "PASS: ref_branch=$REF_BRANCH"
+      - name: Assert current_branch has prefix stripped
+        env:
+          CURRENT_BRANCH: ${{ steps.action.outputs.current_branch }}
+        run: |
+          echo "current_branch: $CURRENT_BRANCH"
+          # Under act, the branch is 'act-harness'; stripping 'act-' yields 'harness'
+          if [ "$CURRENT_BRANCH" != "harness" ]; then
+            echo "FAIL: expected current_branch='harness' after stripping 'act-' prefix, got '$CURRENT_BRANCH'"
+            exit 1
+          fi
+          echo "PASS: current_branch=$CURRENT_BRANCH"
+      - name: Assert is_tag is false
+        env:
+          IS_TAG: ${{ steps.action.outputs.is_tag }}
+        run: |
+          echo "is_tag: $IS_TAG"
+          if [ "$IS_TAG" != "false" ]; then
+            echo "FAIL: expected is_tag=false, got '$IS_TAG'"
+            exit 1
+          fi
+          echo "PASS"

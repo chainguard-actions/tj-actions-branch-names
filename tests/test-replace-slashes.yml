@@ -1,0 +1,61 @@
+name: Test replace_slashes_with_hyphens input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          replace_slashes_with_hyphens: "true"
+      - name: Assert ref_branch has no slashes
+        env:
+          REF_BRANCH: ${{ steps.action.outputs.ref_branch }}
+        run: |
+          echo "ref_branch: $REF_BRANCH"
+          if [ -z "$REF_BRANCH" ]; then
+            echo "FAIL: expected ref_branch to be non-empty"
+            exit 1
+          fi
+          if echo "$REF_BRANCH" | grep -q '/'; then
+            echo "FAIL: ref_branch contains slashes: '$REF_BRANCH'"
+            exit 1
+          fi
+          echo "PASS: ref_branch=$REF_BRANCH (no slashes)"
+      - name: Assert current_branch has no slashes
+        env:
+          CURRENT_BRANCH: ${{ steps.action.outputs.current_branch }}
+        run: |
+          echo "current_branch: $CURRENT_BRANCH"
+          if [ -z "$CURRENT_BRANCH" ]; then
+            echo "FAIL: expected current_branch to be non-empty"
+            exit 1
+          fi
+          if echo "$CURRENT_BRANCH" | grep -q '/'; then
+            echo "FAIL: current_branch contains slashes: '$CURRENT_BRANCH'"
+            exit 1
+          fi
+          echo "PASS: current_branch=$CURRENT_BRANCH (no slashes)"
+      - name: Assert is_tag is false
+        env:
+          IS_TAG: ${{ steps.action.outputs.is_tag }}
+        run: |
+          echo "is_tag: $IS_TAG"
+          if [ "$IS_TAG" != "false" ]; then
+            echo "FAIL: expected is_tag=false, got '$IS_TAG'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert act-harness branch name preserved (no slashes to replace)
+        env:
+          REF_BRANCH: ${{ steps.action.outputs.ref_branch }}
+        run: |
+          echo "ref_branch: $REF_BRANCH"
+          # Under act, branch is 'act-harness' — no slashes, so output should be unchanged
+          if [ "$REF_BRANCH" != "act-harness" ]; then
+            echo "FAIL: expected ref_branch='act-harness', got '$REF_BRANCH'"
+            exit 1
+          fi
+          echo "PASS"

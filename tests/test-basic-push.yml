@@ -1,0 +1,62 @@
+name: Test basic push scenario
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+      - name: Assert is_tag is false
+        env:
+          IS_TAG: ${{ steps.action.outputs.is_tag }}
+        run: |
+          echo "is_tag: $IS_TAG"
+          if [ "$IS_TAG" != "false" ]; then
+            echo "FAIL: expected is_tag=false, got '$IS_TAG'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert current_branch is set
+        env:
+          CURRENT_BRANCH: ${{ steps.action.outputs.current_branch }}
+        run: |
+          echo "current_branch: $CURRENT_BRANCH"
+          if [ -z "$CURRENT_BRANCH" ]; then
+            echo "FAIL: expected current_branch to be non-empty"
+            exit 1
+          fi
+          echo "PASS: current_branch=$CURRENT_BRANCH"
+      - name: Assert ref_branch is set
+        env:
+          REF_BRANCH: ${{ steps.action.outputs.ref_branch }}
+        run: |
+          echo "ref_branch: $REF_BRANCH"
+          if [ -z "$REF_BRANCH" ]; then
+            echo "FAIL: expected ref_branch to be non-empty"
+            exit 1
+          fi
+          echo "PASS: ref_branch=$REF_BRANCH"
+      - name: Assert is_default is set
+        env:
+          IS_DEFAULT: ${{ steps.action.outputs.is_default }}
+        run: |
+          echo "is_default: $IS_DEFAULT"
+          if [ "$IS_DEFAULT" != "true" ] && [ "$IS_DEFAULT" != "false" ]; then
+            echo "FAIL: expected is_default to be 'true' or 'false', got '$IS_DEFAULT'"
+            exit 1
+          fi
+          echo "PASS: is_default=$IS_DEFAULT"
+      - name: Assert current_branch equals ref_branch (non-PR push)
+        env:
+          CURRENT_BRANCH: ${{ steps.action.outputs.current_branch }}
+          REF_BRANCH: ${{ steps.action.outputs.ref_branch }}
+        run: |
+          echo "current_branch: $CURRENT_BRANCH"
+          echo "ref_branch: $REF_BRANCH"
+          if [ "$CURRENT_BRANCH" != "$REF_BRANCH" ]; then
+            echo "FAIL: expected current_branch to equal ref_branch on a push event"
+            exit 1
+          fi
+          echo "PASS"

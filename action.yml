@@ -14,7 +14,6 @@ inputs:
     description: 'Replace forward slashes with hyphens in branch names e.g. `feature/test` -> `feature-test`'
     default: 'false'
     required: false
-
 outputs:
   is_default:
     value: ${{ steps.default.outputs.is_default }}
@@ -40,10 +39,26 @@ outputs:
   tag:
     value: ${{ steps.tag.outputs.tag }}
     description: 'The tag that triggered the workflow run. e.g `v0.0.1`, `0.0.1`'
-
 runs:
   using: "composite"
   steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - id: branch
       env:
         GITHUB_REF: ${{ github.ref }}
@@ -66,8 +81,8 @@ runs:
           REF_BRANCH=${REF_BRANCH/refs\/heads\//}
 
           # Strip branch prefix if provided
-          REF_BRANCH=${REF_BRANCH/$INPUTS_STRIP_BRANCH_PREFIX/}
-          HEAD_REF=${HEAD_REF/$INPUTS_STRIP_BRANCH_PREFIX/}
+          REF_BRANCH=${REF_BRANCH/"$INPUTS_STRIP_BRANCH_PREFIX"/}
+          HEAD_REF=${HEAD_REF/"$INPUTS_STRIP_BRANCH_PREFIX"/}
 
           # Replace slashes with hyphens if enabled
           if [[ "$INPUTS_REPLACE_SLASHES" == "true" ]]; then
@@ -76,22 +91,22 @@ runs:
             REF_BRANCH=${REF_BRANCH//\//-}
           fi
 
-          safe_base_ref=$(printf '%s' "$BASE_REF" | tr -d '\n\r')
-          safe_head_ref=$(printf '%s' "$HEAD_REF" | tr -d '\n\r')
-          safe_ref_branch=$(printf '%s' "$REF_BRANCH" | tr -d '\n\r')
-          printf "base_ref_branch=%s\n" "$safe_base_ref" >> "$GITHUB_OUTPUT"
-          printf "head_ref_branch=%s\n" "$safe_head_ref" >> "$GITHUB_OUTPUT"
-          printf "ref_branch=%s\n" "$safe_ref_branch" >> "$GITHUB_OUTPUT"
+          safe_base=$(printf '%s' "$BASE_REF" | tr -d '\n\r')
+          safe_head=$(printf '%s' "$HEAD_REF" | tr -d '\n\r')
+          safe_ref=$(printf '%s' "$REF_BRANCH" | tr -d '\n\r')
+          printf "base_ref_branch=%s\n" "$safe_base" >> "$GITHUB_OUTPUT"
+          printf "head_ref_branch=%s\n" "$safe_head" >> "$GITHUB_OUTPUT"
+          printf "ref_branch=%s\n" "$safe_ref" >> "$GITHUB_OUTPUT"
         else
           BASE_REF=$(printf "%q" "$GITHUB_EVENT_BASE_REF")
-          BASE_REF=${BASE_REF/refs\/heads\/$INPUTS_STRIP_TAG_PREFIX/}
+          BASE_REF=${BASE_REF/refs\/heads\/"$INPUTS_STRIP_TAG_PREFIX"/}
 
           # Replace slashes with hyphens if enabled
           if [[ "$INPUTS_REPLACE_SLASHES" == "true" ]]; then
             BASE_REF=${BASE_REF//\//-}
           fi
-          safe_base_ref=$(printf '%s' "$BASE_REF" | tr -d '\n\r')
-          printf "base_ref_branch=%s\n" "$safe_base_ref" >> "$GITHUB_OUTPUT"
+          safe_base=$(printf '%s' "$BASE_REF" | tr -d '\n\r')
+          printf "base_ref_branch=%s\n" "$safe_base" >> "$GITHUB_OUTPUT"
         fi
       shell: bash
     - id: current_branch
@@ -104,11 +119,11 @@ runs:
         # "Set the current branch name..."
         if [[ "$GITHUB_REF" != "refs/tags/"* ]]; then
           if [[ "$GITHUB_EVENT_NAME" == *"pull_request"* ]]; then
-            safe_current_branch=$(printf '%s' "$HEAD_REF_BRANCH" | tr -d '\n\r')
-            echo "current_branch=$safe_current_branch" >> "$GITHUB_OUTPUT"
+            safe=$(printf '%s' "$HEAD_REF_BRANCH" | tr -d '\n\r')
+            echo "current_branch=$safe" >> "$GITHUB_OUTPUT"
           else
-            safe_current_branch=$(printf '%s' "$REF_BRANCH" | tr -d '\n\r')
-            echo "current_branch=$safe_current_branch" >> "$GITHUB_OUTPUT"
+            safe=$(printf '%s' "$REF_BRANCH" | tr -d '\n\r')
+            echo "current_branch=$safe" >> "$GITHUB_OUTPUT"
           fi
         fi
       shell: bash
@@ -121,13 +136,13 @@ runs:
       run: |
         # "Set the default branch name..."
         if [[ "$GITHUB_REF" != "refs/tags/"* ]]; then
-          safe_default_branch=$(printf '%s' "$DEFAULT_BRANCH" | tr -d '\n\r')
+          safe_default=$(printf '%s' "$DEFAULT_BRANCH" | tr -d '\n\r')
           if [[ "$CURRENT_BRANCH" == "$DEFAULT_BRANCH" && "$FORK" != "true" ]]; then
             echo "is_default=true" >> "$GITHUB_OUTPUT"
-            echo "default_branch=$safe_default_branch" >> "$GITHUB_OUTPUT"
+            echo "default_branch=$safe_default" >> "$GITHUB_OUTPUT"
           else
             echo "is_default=false" >> "$GITHUB_OUTPUT"
-            echo "default_branch=$safe_default_branch" >> "$GITHUB_OUTPUT"
+            echo "default_branch=$safe_default" >> "$GITHUB_OUTPUT"
           fi
         fi
       shell: bash
@@ -140,7 +155,7 @@ runs:
         # "Set the tag name..."
         if [[ "$GITHUB_REF" == "refs/tags/"* ]]; then
           REF=$(printf "%q" "$GITHUB_REF")
-          TAG="${REF/refs\/tags\/$INPUTS_STRIP_TAG_PREFIX/}"
+          TAG="${REF/refs\/tags\/"$INPUTS_STRIP_TAG_PREFIX"/}"
 
           # Replace slashes with hyphens if enabled
           if [[ "$INPUTS_REPLACE_SLASHES" == "true" ]]; then
@@ -154,7 +169,6 @@ runs:
           echo "is_tag=false" >> "$GITHUB_OUTPUT"
         fi
       shell: bash
-
 branding:
   icon: git-branch
   color: white
