@@ -6,9 +6,9 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 ## Versions
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v9 | [`v9`](https://github.com/chainguard-actions/tj-actions-branch-names/tree/v9) | [`5250492`](https://github.com/tj-actions/branch-names/commit/5250492686b253f06fa55861556d1027b067aeb5) |
+| Version | Tag | Upstream commit | Hardening report |
+|---------|-----|-----------------|------------------|
+| v9 | [`v9`](https://github.com/chainguard-actions/tj-actions-branch-names/tree/v9) | [`5250492`](https://github.com/tj-actions/branch-names/commit/5250492686b253f06fa55861556d1027b067aeb5) | [`HARDENING.md`](https://github.com/chainguard-actions/tj-actions-branch-names/blob/v9/HARDENING.md) |
 
 ## Privacy
 
